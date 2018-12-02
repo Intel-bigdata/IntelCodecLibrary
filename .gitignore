@@ -1,0 +1,33 @@
+# .gitignore file
+target/
+jni-header/
+# Source
+########
+*.o
+*.so
+*.dll
+*.a
+*.exe
+*.ko
+*.class
+
+# Package
+#########
+*.jar
+*.zip
+*.tar
+*.gz
+
+# Log files
+###########
+*.log
+
+# Editor copies
+###############
+README~
+.gitignore~
+*.c~
+*.h~
+*.java~
+*.sh~
+*.scala~
