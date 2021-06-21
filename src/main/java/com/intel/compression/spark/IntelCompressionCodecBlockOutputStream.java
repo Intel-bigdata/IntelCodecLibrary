@@ -21,11 +21,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
 import java.nio.ByteBuffer;
+
+import com.intel.compression.util.Platform;
+import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.intel.compression.util.buffer.*;
 import com.intel.compression.jni.IntelCompressionCodecJNI;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * Streaming IntelCompressionCodec.
@@ -108,6 +112,37 @@ public final class IntelCompressionCodecBlockOutputStream extends FilterOutputSt
     }
   }
 
+  public void write(ByteBuf byteBuf, int off, int len) throws IOException {
+    checkStream();
+    if (!byteBuf.isDirect()) {
+      throw new UnsupportedOperationException("unsupported buffer type.");
+    }
+    if (byteBuf == null) {
+      throw new NullPointerException();
+    }
+    if (off < 0 || len < 0 || off > byteBuf.readableBytes() - len) {
+      throw new ArrayIndexOutOfBoundsException("BlockOutputStream write requested length " + len
+              + " from offset " + off + " in buffer of size " + byteBuf.readableBytes());
+    }
+    DirectBuffer directUncompressedBuffer = (DirectBuffer) uncompressedBuffer;
+
+    while (uncompressedBufferPosition + len > uncompressedBlockSize) {
+      int left = uncompressedBlockSize - uncompressedBufferPosition;
+      long srcAddress = byteBuf.memoryAddress() + off;
+      long dstAddress = directUncompressedBuffer.address() + uncompressedBufferPosition;
+      Platform.copyMemory(null, srcAddress, null, dstAddress, left);
+      uncompressedBufferPosition = uncompressedBlockSize;
+      uncompressedBuffer.position(uncompressedBuffer.position() + left);
+      compressBufferedData();
+      off += left;
+      len -= left;
+    }
+    Platform.copyMemory(null, byteBuf.memoryAddress() + off,
+            null, directUncompressedBuffer.address() + uncompressedBufferPosition, len);
+    uncompressedBuffer.position(uncompressedBuffer.position() + len);
+    uncompressedBufferPosition += len;
+  }
+
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
     checkStream();
@@ -115,7 +150,7 @@ public final class IntelCompressionCodecBlockOutputStream extends FilterOutputSt
       throw new NullPointerException();
     }
     if (off < 0 || len < 0 || off > b.length - len) {
-      throw new ArrayIndexOutOfBoundsException("BlockOutputStream write requested lenght " + len
+      throw new ArrayIndexOutOfBoundsException("BlockOutputStream write requested length " + len
           + " from offset " + off + " in buffer of size " + b.length);
     }
 
