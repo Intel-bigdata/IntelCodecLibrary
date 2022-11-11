@@ -164,6 +164,7 @@
       <artifactId>scalap</artifactId>
       <version>${scala.version}</version>
     </dependency>
+    <!-- Disable due to security issue, please enable it when compile
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-core_${scala.binary.version}</artifactId>
@@ -227,6 +228,7 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+    -->
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
